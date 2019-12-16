@@ -1,0 +1,65 @@
+.dynamic-form-render-wrapper {
+  .ant-row {
+    &.ant-form-item {
+      margin-bottom: 0;
+    }
+  }
+
+  &.dynamic-form-render-view-mode {
+    .ant-row {
+      .ant-form-item {
+        margin-bottom: 0 !important;
+      }
+
+      &, >div {
+        line-height: 26px;
+      }
+    }
+  }
+
+  .form-field-render-view {
+    color: #999;
+    
+    .form-field-render-view-value {
+      line-height: 1.6em;
+      display: inline-block;
+      word-break: break-all;
+    }
+  }
+
+  .ant-form-item-label {
+    white-space: initial !important;
+    text-overflow: initial !important;
+  
+    label {
+      line-height: 18px !important;
+      display: inline-block;
+    }
+  }
+
+  .dynamic-textarea-form-render-wrapper {
+    .ant-form-item-label {
+      width: 20%;
+    }
+
+    .ant-form-item-control-wrapper {
+      width: 80%;
+    }
+  }
+
+  .ant-collapse {
+    .ant-collapse-header {
+      padding: 10px 0 10px 40px;
+    }
+
+    .ant-collapse-content {
+      &.ant-collapse-content-active {
+        height: auto !important; //非常奇怪的bug,antd有时会自动设置ant-collapse-content-active的高度，导致内容区展示内容不全
+      }
+
+      .ant-collapse-content-box {
+        padding: 10px;
+      }
+    }
+  }
+}

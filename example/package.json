@@ -1,0 +1,28 @@
+{
+  "name": "wuli-react-dynamic-form-render-example",
+  "homepage": "https://.github.io/wuli-react-dynamic-form-render",
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "antd": "3.0.0",
+    "babel-plugin-transform-decorators-legacy": "^1.3.5",
+    "mobx": "^5.5.0",
+    "mobx-react": "^5.2.8",
+    "mobx-utils": "^5.0.2",
+    "prop-types": "^15.6.0",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "react-scripts": "^1.1.4",
+    "wuli-react-dynamic-form-render": "link:.."
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "axios": "^0.18.0"
+  }
+}
