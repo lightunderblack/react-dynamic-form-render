@@ -13,7 +13,7 @@
 | onClear | 点击清除按钮事件回调 | `() => void` | 否 |  |
 | onSubmit | 点击搜索按钮事件回调，需返回`Promise`对象 | `(values) => promise` | 是 |  |
 
-### example
+### example
 
 ```jsx
 import DynamicSearchForm from '~/_components/FormFieldRender/DynamicSearchForm';
@@ -41,16 +41,16 @@ const props = {
       name: '状态', //表单label名称 
       id: 'currentStatus', //表单唯一id
       attrType : ATTR_TYPE_SELECT, //组件类型为单选下拉列表
-      dictId: 'CPLM_OBJ_CHANGE_STATUS', //设置对接csb数据字典的字典id
-      onLoaded: (value) => [{ name: '全部', id: '' }, ...value], //接口返回数据预处理，为了格式统一
+      dictId: 'CPLM_OBJ_CHANGE_STATUS', //设置对接csb数据字典的字典id
+      onLoaded: (value) => [{ name: '全部', id: '' }, ...value], //接口返回数据预处理，为了格式统一
     },
     {
       name: '事业部', //表单label名称 
       id: 'orgCode', //表单唯一id
-      dictId: 'CPLM_OBJ_ORG_UNIT', //设置对接csb数据字典的字典id
+      dictId: 'CPLM_OBJ_ORG_UNIT', //设置对接csb数据字典的字典id
       attrType : ATTR_TYPE_SELECT, //组件类型为单选下拉列表
-      dropdownMatchSelectWidth: false, //下拉菜单宽度自适应
-      onLoaded: (value) => [{ name: '全部', id: '' }, ...value], //接口返回数据预处理，为了格式统一
+      dropdownMatchSelectWidth: false, //下拉菜单宽度自适应
+      onLoaded: (value) => [{ name: '全部', id: '' }, ...value], //接口返回数据预处理，为了格式统一
     },
     {
       name: '创建人', //表单label名称 
