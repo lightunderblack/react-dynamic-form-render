@@ -1,5 +1,5 @@
 ### Introduction
-表单组组件，根据用户传入的多个表单组件数据渲染，支持分组，默认分组样式为`Collpase`
+表单组组件，根据用户传入的多个表单组件数据渲染，支持分组，默认分组样式为`Collpase`
 
 ### API
 
@@ -7,17 +7,17 @@
 
 | 参数 | 说明 | 类型 | 必填 | 默认值 |
 | ---- | ---- | ---- | ---- | ------ |
-| mode | 设置组件预览或者编辑模式，可选值为`view` or `edit` | `object` | 是 | `view` |
+| mode | 设置组件预览或者编辑模式，可选值为`view` or `edit` | `object` | 是 | `view` |
 | form | `antd`的`Form`对象，外部注入，表单控制权交给`Form` | `Form` | 是 | |
 | size | 设置组件大小，可选值为`default` or `small` or `large` | `string` | 是 | `default` |
-| direction | 设置布局方式，可选值为`horizontal` or `vertical`，水平模式下默认三列布局，垂直模式下只能单列布局 | `string` | 是 | `horizontal` |
-| itemList | 设置表单组件数据，若`isCollapse`为`true`，则传[ItemList](/src/type/ItemList/README.md)类型数据；若`isCollapse`为`false`，则传[AttributeDtoList](/src/type/AttributeDtoList/README.md)类型数据 | [ItemList](/src/type/ItemList/README.md) or [AttributeDtoList](/src/type/AttributeDtoList/README.md) | 是 |  |
-| values | 设置表单值，它是对象类型，key为表单的id，value则为表单的值 | `object` | 否 | `null` |
-| columnCount | 设置每列显示多少个表单组件，用于水平模式下网格布局，仅对水平模式下有效 | `number` | 否 | 3 |
+| direction | 设置布局方式，可选值为`horizontal` or `vertical`，水平模式下默认三列布局，垂直模式下只能单列布局 | `string` | 是 | `horizontal` |
+| itemList | 设置表单组件数据，若`isCollapse`为`true`，则传[ItemList](/src/type/ItemList/README.md)类型数据；若`isCollapse`为`false`，则传[AttributeDtoList](/src/type/AttributeDtoList/README.md)类型数据 | [ItemList](/src/type/ItemList/README.md) or [AttributeDtoList](/src/type/AttributeDtoList/README.md) | 是 |  |
+| values | 设置表单值，它是对象类型，key为表单的id，value则为表单的值 | `object` | 否 | `null` |
+| columnCount | 设置每列显示多少个表单组件，用于水平模式下网格布局，仅对水平模式下有效 | `number` | 否 | 3 |
 | isCollapse | 设置是否分组，默认为分组 | `boolean` | 否 | `true` |
 | hasFeedback | 展示校验状态图标 | `boolean` | 否 | `true` |
 
-### example
+### example
 
 ```jsx
   import DynamicFormRender from '~/_components/FormFieldRender/DynamicFormRender';
@@ -30,7 +30,7 @@
   } from '~/_constant/attrType';
 
   //不分组垂直布局
-  const formWithoutGroupVerticalProps = {
+  const formWithoutGroupVerticalProps = {
     mode: 'edit',
     size: 'small',
     isCollapse: false, //不需分组
@@ -68,7 +68,7 @@
 
 ```jsx
   //分组水平布局
-  const formWitGroupHorizontalProps = {
+  const formWitGroupHorizontalProps = {
       mode: 'edit',
       size: 'small',
       columnCount: 3, //三列布局

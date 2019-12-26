@@ -1,5 +1,5 @@
 ### Introduction
-表单组件类型相关常量
+表单组件类型相关常量
 
 ### API
 
@@ -26,6 +26,6 @@
 | ATTR_TYPE_SWTICH | 开关选择器 | `string` | “17” |
 | ATTR_TYPE_COMPONENT | 预留自定义组件 | `string` | “9999999” |
 | ATTR_TYPE_LIST | 表单组件类型列表 | `array` |  |
-| IS_DICT_LIST_FIELDS | 可对接列表字典表单域组件类型 | `object` |  |
-| IS_DICT_TREE_FIELDS | 可对接树形字典表单域组件类型 | `object` |  |
-| IS_PERSON_SEARCH_FIELDS | 可对接人员搜索字典表单域 | `object` |  |
+| IS_DICT_LIST_FIELDS | 可对接列表字典表单域组件类型 | `object` |  |
+| IS_DICT_TREE_FIELDS | 可对接树形字典表单域组件类型 | `object` |  |
+| IS_PERSON_SEARCH_FIELDS | 可对接人员搜索字典表单域 | `object` |  |
