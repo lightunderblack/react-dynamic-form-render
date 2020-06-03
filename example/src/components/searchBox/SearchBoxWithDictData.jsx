@@ -12,7 +12,6 @@ export default class SearchBoxWithDictData extends Component {
 
   //后台返回数据格式必须是{ data: { content: [] } }
   handleGetData (params) {
-    return axios.get(`https://cplmobjtest.gz.cvte.cn/dict/list/${params.params.apiName}`, params).then(res => res.data);
   }
 
   handleOnLoaded (array) {

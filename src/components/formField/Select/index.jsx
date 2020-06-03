@@ -72,8 +72,20 @@ class FormFieldSelect extends Component {
   }
 
   render () {
-    let { mode, value, disabled, placeholder, isMultiple, maxTagCount, maxTagPlaceholder, style = {}, getPopupContainer = () => document.body } = this.props;
+    let { 
+      mode,
+      value,
+      onBlur,
+      disabled,
+      style = {},
+      placeholder,
+      isMultiple,
+      maxTagCount,
+      maxTagPlaceholder,
+      getPopupContainer = () => document.body
+    } = this.props;
     const props = {
+      onBlur,
       disabled,
       placeholder,
       allowClear: true,
@@ -110,6 +122,7 @@ class FormFieldSelect extends Component {
     mode: PropTypes.string,
     getData: PropTypes.func,
     style: PropTypes.object,
+    onBlur: PropTypes.func,
     onLoaded: PropTypes.func,
     disabled: PropTypes.bool,
     keyName: PropTypes.string,

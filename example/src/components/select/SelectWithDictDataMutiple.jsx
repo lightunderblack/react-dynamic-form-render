@@ -11,7 +11,6 @@ export default class SelectWithDictDataMutiple extends Component {
   }
 
   handleGetData (params) {
-    return axios.get(`https://cplmobjtest.gz.cvte.cn/dict/list/CPLM_OBJ_BOM_LEVEL`).then(res => res.data);
   }
 
   handleOnLoaded (array) {

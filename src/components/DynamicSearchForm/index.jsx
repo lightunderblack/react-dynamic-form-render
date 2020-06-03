@@ -10,6 +10,8 @@ import {
 
 import _ from 'lodash';
 
+import './DynamicSearchForm.less';
+
 @Form.create()
 export default class DynamicSearchForm extends Component {
   state = {
@@ -63,7 +65,7 @@ export default class DynamicSearchForm extends Component {
       isCollapse: false,
       direction: 'horizontal',
       hasFeedback: hasFeedback == null ? false : hasFeedback,
-      ..._.pick(this.props, ['form', 'itemList', 'columnCount', 'formItemLayout', 'isTextAreaAlone'])
+      ..._.pick(this.props, ['form', 'values', 'itemList', 'columnCount', 'formItemLayout', 'isTextAreaAlone'])
     };
     return (
       <DynamicFormRenderComponent {...props} />
@@ -72,9 +74,12 @@ export default class DynamicSearchForm extends Component {
 
   generateToolbar () {
     return (
-      <div className="text-right margin-top-8">
-        <Button className="margin-right-8" type="primary" size="small" icon="search" htmlType="submit" onClick={this.handleSubmit} loading={this.state.loading}>搜索</Button>
-        <Button className="margin-right-8" size="small" onClick={this.handleClear}>清除</Button>
+      <div className="text-right margin-top-8 dynamic-search-form-toolbar-wrapper">
+        <div>{this.props.extractComponent}</div>
+        <div>
+          <Button className="margin-right-8" size="small" onClick={this.handleClear}>重置</Button>
+          <Button className="margin-right-8" type="primary" size="small" htmlType="submit" onClick={this.handleSubmit} loading={this.state.loading}>搜索</Button>
+        </div>
       </div>
     );
   }
@@ -101,6 +106,7 @@ export default class DynamicSearchForm extends Component {
     columnCount: PropTypes.number,
     isTextAreaAlone: PropTypes.bool,
     formItemLayout: PropTypes.object,
+    extractComponent: PropTypes.object,
     onClear: PropTypes.func.isRequired,
     onSubmit: PropTypes.func.isRequired,
     itemList: PropTypes.array.isRequired

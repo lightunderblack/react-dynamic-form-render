@@ -28,13 +28,16 @@ class FormFieldNumber extends Component {
   generateViewArea(value) {
     let title;
     let element = null;
-    const { viewRender } = this.props;
+    const { viewRender, isOnlyShowText } = this.props;
 
     if (viewRender) {
       element = viewRender(value);
     } else {
       element = value;
       title = element;
+      if (isOnlyShowText) {
+        return title;
+      }
     }
 
     return (

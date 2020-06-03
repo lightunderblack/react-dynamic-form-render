@@ -7,17 +7,17 @@
 
 | 参数 | 说明 | 类型 | 必填 | 默认值 |
 | ---- | ---- | ---- | ---- | ------ |
-| mode | 设置组件预览或者编辑模式，可选值为`view` or `edit` | `object` | 是 | `view` |
+| mode | 设置组件预览或者编辑模式，可选值为`view` or `edit` | `object` | 是 | `view` |
 | form | `antd`的`Form`对象，外部注入，表单控制权交给`Form` | `Form` | 是 | |
 | size | 设置组件大小，可选值为`default` or `small` or `large` | `string` | 是 | `default` |
-| direction | 设置布局方式，可选值为`horizontal` or `vertical`，水平模式下默认三列布局，垂直模式下只能单列布局 | `string` | 是 | `horizontal` |
-| itemList | 设置表单组件数据，若`isCollapse`为`true`，则传[ItemList](/src/type/ItemList/README.md)类型数据；若`isCollapse`为`false`，则传[AttributeDtoList](/src/type/AttributeDtoList/README.md)类型数据 | [ItemList](/src/type/ItemList/README.md) or [AttributeDtoList](/src/type/AttributeDtoList/README.md) | 是 |  |
+| direction | 设置布局方式，可选值为`horizontal`or `vertical`，水平模式下默认三列布局，垂直模式下只能单列布局 | `string` | 是 | `horizontal` |
+| itemList | 设置表单组件数据，若`isCollapse`为`true`，则传[ItemList]()类型数据；若`isCollapse`为`false`，则传[AttributeDtoList]类型数据 | [ItemList] or [AttributeDtoList] | 是 |  |
 | values | 设置表单值，它是对象类型，key为表单的id，value则为表单的值 | `object` | 否 | `null` |
 | columnCount | 设置每列显示多少个表单组件，用于水平模式下网格布局，仅对水平模式下有效 | `number` | 否 | 3 |
 | isCollapse | 设置是否分组，默认为分组 | `boolean` | 否 | `true` |
 | hasFeedback | 展示校验状态图标 | `boolean` | 否 | `true` |
 
-### example
+### example
 
 ```jsx
   import DynamicFormRender from '~/_components/FormFieldRender/DynamicFormRender';
@@ -29,55 +29,55 @@
     ATTR_TYPE_MULTI_SELECT
   } from '~/_constant/attrType';
 
-  //不分组垂直布局
-  const formWithoutGroupVerticalProps = {
+  //不分组垂直布局
+  const formWithoutGroupVerticalProps = {
     mode: 'edit',
     size: 'small',
     isCollapse: false, //不需分组
-    direction: 'vertical', //垂直布局
+    direction: 'vertical', //垂直布局
     form: this.props.form, //外部antd Form对象注入
-    //不分组，则itemList值为AttributeDtoList类型对象
+    //不分组，则itemList值为AttributeDtoList类型对象
     itemList: [
       {
         id: 'buId', //表单唯一id
         name: '事业部', //表单label名称
         isRequired: '1', //是否必填
-        dictId: 'CPLM_OBJ_ORG_UNIT', //设置对接csb数据字典的字典id
+        dictId: 'CPLM_OBJ_ORG_UNIT', //设置对接csb数据字典的字典id
         attrType : ATTR_TYPE_SELECT, //设置组件类型为下拉单选
       }, 
       {
         isRequired: '1', //是否必填
         id: 'requireId', //表单唯一id
         name: '客户管控规则', //表单label名称
-        attrType: ATTR_TYPE_SEARCH, //设置组件类型为单选搜索
-        onLoaded: (value) => value.map(({ key, value }) => ({ code: key, name: value })), //接口返回数据预处理，为了格式统一
+        attrType: ATTR_TYPE_SEARCH, //设置组件类型为单选搜索
+        onLoaded: (value) => value.map(({ key, value }) => ({ code: key, name: value })), //接口返回数据预处理，为了格式统一
         getData: this.props.baselineLimitMaterials.getBaselineRequireAll //用户自定义数据源接口
       }, 
       {
         name: '产品型号', //表单label名称
         id: 'prodModel', //表单唯一id
         isRequired: '1', //是否必填
-        attrType : ATTR_TYPE_SEARCH, //设置组件类型为单选搜索
-        extraParams: { existAsterisk: 1 }, //搜索接口需要额外参数
+        attrType : ATTR_TYPE_SEARCH, //设置组件类型为单选搜索
+        extraParams: { existAsterisk: 1 }, //搜索接口需要额外参数
         getData: this.props.baselineLimitMaterials.searchProdModelWithAsterisk //用户自定义数据源接口
       }
     ]
   };
-  const formWithoutGroupVertical = (<DynamicFormRender {...formWithoutGroupProps} />);
+  const formWithoutGroupVertical = (<DynamicFormRender {...formWithoutGroupProps} />);
 ```
 
 ```jsx
   //分组水平布局
-  const formWitGroupHorizontalProps = {
+  const formWitGroupHorizontalProps = {
       mode: 'edit',
       size: 'small',
       columnCount: 3, //三列布局
       isCollapse: true, //分组
-      hasFeedback: false, //不显示表单校验结果图标
+      hasFeedback: false, //不显示表单校验结果图标
       form: this.props.form, //外部antd Form对象注入
       direction: 'horizontal', //水平布局
-      values: this.state.values, // 设置表单值，它是对象类型，key为表单的id，value则为表单的值
-      //分组，则itemList值为ItemList类型对象
+      values: this.state.values, // 设置表单值，它是对象类型，key为表单的id，value则为表单的值
+      //分组，则itemList值为ItemList类型对象
       itemList: [
         { 
           id: 'report',
@@ -88,22 +88,22 @@
               id: 'bomFormat', //表单唯一id
               name: 'BOM格式', //表单label名称
               isRequired: '1', //是否必填
-              attrType : ATTR_TYPE_RADIO, //设置组件类型为单选框
-              dataSource: [{ name: 'CVTE BOM', code: 'cvte' }, { name: 'CKD BOM', code: 'ckd' }] //设置本地数据源，此时就不用配置数据字典id或用户自定义数据源接口
+              attrType : ATTR_TYPE_RADIO, //设置组件类型为单选框
+              dataSource: [{ name: 'BOM', code: 'bom' }, { name: 'CKD BOM', code: 'ckd' }] //设置本地数据源，此时就不用配置数据字典id或用户自定义数据源接口
             },
             {
               name: '导出语言', //表单label名称
               isRequired: '1', //是否必填
               id: 'exportLang', //表单唯一id
-              attrType : ATTR_TYPE_RADIO, //设置组件类型为单选框
-              dataSource: [{ name: '中文', code: 'ch' }, { name: '英文', code: 'en' }] //设置本地数据源，此时就不用配置数据字典id或用户自定义数据源接口
+              attrType : ATTR_TYPE_RADIO, //设置组件类型为单选框
+              dataSource: [{ name: '中文', code: 'ch' }, { name: '英文', code: 'en' }] //设置本地数据源，此时就不用配置数据字典id或用户自定义数据源接口
             },
             {
               isRequired: '1', //是否必填
               id: 'blOperation', //表单唯一id
               name: '基线运算条件', //表单label名称
-              attrType : ATTR_TYPE_RADIO, //设置组件类型为单选框
-              dataSource: [{ name: '增加未进入事业部基线替代料', code: '0' }, { name: '仅运算进入事业部基线替代料', code: '1' }, { name: '运算所有基线物料', code: '2' }] //设置本地数据源，此时就不用配置数据字典id或用户自定义数据源接口
+              attrType : ATTR_TYPE_RADIO, //设置组件类型为单选框
+              dataSource: [{ name: '增加未进入事业部基线替代料', code: '0' }, { name: '仅运算进入事业部基线替代料', code: '1' }, { name: '运算所有基线物料', code: '2' }] //设置本地数据源，此时就不用配置数据字典id或用户自定义数据源接口
             }
           ] 
         }, 
@@ -116,7 +116,7 @@
               id: 'bomNo', //表单唯一id
               name: '产品代码', //表单label名称
               isRequired: '1', //是否必填
-              attrType : ATTR_TYPE_TEXT, //设置组件类型为单行文本框
+              attrType : ATTR_TYPE_TEXT, //设置组件类型为单行文本框
               onBlur: (value) => {} //设置文本框焦点失去事件回调
             },
             {
@@ -148,5 +148,5 @@
         }
       ]
   };
-  const formWithGroupHorizontal = (<DynamicFormRender {...formWitGroupHorizontalProps} />);
+  const formWithGroupHorizontal = (<DynamicFormRender {...formWitGroupHorizontalProps} />);
 ```

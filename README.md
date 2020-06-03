@@ -1,9 +1,5 @@
 # wuli-react-dynamic-form-render
 
-> 
-
-[![NPM](https://img.shields.io/npm/v/wuli-react-dynamic-form-render.svg)](https://npm.gz.cvte.cn/package/wuli-react-dynamic-form-render) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
-
 ## 安装
 
 ```bash

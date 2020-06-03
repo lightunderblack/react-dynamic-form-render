@@ -24,6 +24,11 @@
 | ATTR_TYPE_TAG_INPUT | 标签输入框 | `string` | “15” |
 | ATTR_TYPE_DATE_RANGE | 日期区间选择 | `string` | “16” |
 | ATTR_TYPE_SWTICH | 开关选择器 | `string` | “17” |
+| ATTR_TYPE_SINGLE_TAG_INPUT | 单标签输入框 | `string` | “18” |
+| ATTR_TYPE_TREE_MULTI_SELECT | 树形多选 | `string` | “19” |
+| ATTR_TYPE_LABEL | 文本标签 | `string` | “999” |
+| ATTR_TYPE_CUSTOM_COMP | 定制组件 | `string` | “9999” |
+| ATTR_TYPE_CUSTOM_COMP_MULTI | 定制组件多值 | `string` | “10000” |
 | ATTR_TYPE_COMPONENT | 预留自定义组件 | `string` | “9999999” |
 | ATTR_TYPE_LIST | 表单组件类型列表 | `array` |  |
 | IS_DICT_LIST_FIELDS | 可对接列表字典表单域组件类型 | `object` |  |

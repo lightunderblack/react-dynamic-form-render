@@ -38,7 +38,8 @@ import {
   ATTR_TYPE_MULTI_SEARCH,
   ATTR_TYPE_MULTI_PERSON,
   ATTR_TYPE_SINGLE_TAG_INPUT,
-  ATTR_TYPE_TREE_MULTI_SELECT
+  ATTR_TYPE_TREE_MULTI_SELECT,
+  ATTR_TYPE_CUSTOM_COMP_MULTI
 } from '../../constant/attrType';
 
 import moment from 'moment';
@@ -134,11 +135,14 @@ export default class FormFieldRender extends Component {
   //生成预览模式显示区
   generateViewArea (value) {
     let element = null;
-    const { viewRender } = this.props;
+    const { viewRender, isOnlyShowText } = this.props;
     if (viewRender) {
       element = viewRender(value);
     } else {
       element = value;
+      if (isOnlyShowText) {
+        return element;
+      }
     }
     return (
       <div className="form-field-render-view"><div className="form-field-render-view-value">{ element }</div></div>
@@ -329,8 +333,8 @@ export default class FormFieldRender extends Component {
     );
   }
 
-  generateCustomComponent () {
-    const props = { ...this.pickProps() };
+  generateCustomComponent (isMultiple) {
+    const props = { isMultiple, ...this.pickProps() };
     return (
       <FormFieldCustomComponent {...props} />
     );
@@ -377,7 +381,8 @@ export default class FormFieldRender extends Component {
       case ATTR_TYPE_COMPONENT:
         return this.generateComponent();
       case ATTR_TYPE_CUSTOM_COMP:
-        return this.generateCustomComponent();
+      case ATTR_TYPE_CUSTOM_COMP_MULTI:
+        return this.generateCustomComponent(attrType === ATTR_TYPE_CUSTOM_COMP_MULTI);
       case ATTR_TYPE_TEXT:
       default:
         return this.generateTextInput(verificationRule, false);

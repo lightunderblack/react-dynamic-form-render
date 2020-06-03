@@ -12,6 +12,9 @@ import {
 } from '../../../constant/attrType';
 
 import _ from 'lodash';
+import uuid from 'uuid';
+import Tools from '../../../util/tool';
+
 import './style.less';
 
 const { Group: InputGroup } = Input;
@@ -31,17 +34,32 @@ const SPECIAL_CHARACTER_MAP = [
   [')', '）']
 ];
 
+const getWidth = (width, attrType) => {
+  if (ATTR_TYPE_LABEL === attrType) {
+    return width || 30;
+  } else if (({ [ATTR_TYPE_INT]: 1, [ATTR_TYPE_TEXT]: 1 })[attrType]) {
+    return width || 40;
+  } else if (attrType === ATTR_TYPE_SELECT) {
+    return width || 60;
+  } else {
+    return width || 50;
+  }
+};
+
 export default class CustomComponent extends Component {
   state = {
-    valueMap: {}
+    valueMap: null
   }
 
   componentWillMount () {
     this.collection = {};
+    this.isTriggerChange = false;
     this.parseValue(this.props.field);
   }
 
   componentWillReceiveProps (nextProps) {
+    if (this.isTriggerChange) { this.isTriggerChange = false; return; }
+
     let { value: newValue } = nextProps;
     let { value: oldValue } = this.props;
 
@@ -57,13 +75,7 @@ export default class CustomComponent extends Component {
     this.collection = null;
   }
 
-  filterDictId (compList, isHasCache = false) {
-    return _.uniqBy(compList.filter(({ dictId, attrType }) => {
-      return attrType === ATTR_TYPE_SELECT && dictId && (isHasCache ? this.getDataFromCache(dictId) : !this.getDataFromCache(dictId));
-    }), 'dictId')
-  }
-
-  isEmpty (compList, valueMap) {
+  validateEmpty (compList, valueMap) {
     const inputTypeCompValues = _.transform(compList.filter(({type}) => {
       return type === CUSTOM_COMP_ITEM_TYPE_INPUT;
     }), (result, item) => {
@@ -73,22 +85,49 @@ export default class CustomComponent extends Component {
     return _.isEmpty(inputTypeCompValues);
   }
 
+  isEmpty (compList, valueMap) {
+    if (this.isMultiple()) {
+      return false/*valueMap.map(value => this.validateEmpty(compList, value)).every(value => !value)*/;
+    } else {
+      return this.validateEmpty(compList, valueMap);
+    }
+  }
+
+  /**
+   * 默认单值
+   * @param {*} props 
+   */
+  isMultiple (props = this.props) {
+    const { isMultiple = false } = props;
+    return isMultiple;
+  }
+
+  getIdx () {
+    return uuid.v4().replace(/-/g, '');
+  }
+
+  filterDictId (compList, isHasCache = false) {
+    return _.uniqBy(compList.filter(({ dictId, attrType }) => {
+      return attrType === ATTR_TYPE_SELECT && dictId && (isHasCache ? this.getDataFromCache(dictId) : !this.getDataFromCache(dictId));
+    }), 'dictId')
+  }
+
   onChange (value) {
     value = value || this.getValue();
+    
+    this.isTriggerChange = true;
     this.props.onChange && this.props.onChange(value);
     this.props.onSelfChange && this.props.onSelfChange(value, this.getCompList());
   }
 
   getDataFromCache (dictId) {
-    const key = `FORM_FILED_RENDER_SELECT_${dictId}`;
-    const data = sessionStorage.getItem(key);
-    if (data && JSON.parse(data).length) {
-      return JSON.parse(data);
+    const data = Tools.sessionStorage.get(`FORM_FILED_RENDER_SELECT_${dictId}`);
+    if (data && data.length) {
+      return data;
     }
   }
   
   replaceSpecialCharacter (string) {
-    //return string.replace(/[~!@#$%^&*()/|,.<>?"'();:_+\-=[\]{}]/g, `\\$&`);
     return string.replace(/[~～!！@#$%^&*(（)）/|,，.。<>?？"'(（)）;；:：_+\-=[【\]】{}]/g, (target) => {
       const match = SPECIAL_CHARACTER_MAP.find(item => !!~_.indexOf(item, target));
       if (match) {
@@ -123,6 +162,7 @@ export default class CustomComponent extends Component {
   }
 
   parseValue (props) {
+    let valueMap = null;
     const { attrValue, unitInfo } = props.value || {};
     const compList = this.getCompList();
     const isAttrValueHasValue = (attrValue != null && `${attrValue}`.trim());
@@ -136,15 +176,40 @@ export default class CustomComponent extends Component {
     });
     const parse = () => {
       if (isAttrValueHasValue && isUnitInfoNotInit) {
-        this.parseSpecialValue(compList, attrValue);
+        if (this.isMultiple()) {
+          if (attrValue) {
+            valueMap = attrValue.split(/\;/g).map(value => {
+              return { idx: this.getIdx(), ...this.parseSpecialValue(compList, value) };
+            });
+          } else {
+            valueMap = [{ idx: this.getIdx(), ...this.parseSpecialValue(compList, '') }];
+          }
+        } else {
+          valueMap = this.parseSpecialValue(compList, attrValue);
+        }
       } else {
-        this.parseNormalValue(compList, unitInfo);
+        if (this.isMultiple()) {
+          if (unitInfo) {
+            valueMap = unitInfo.split(/\;/g).map(value => {
+              return { idx: this.getIdx(), ...this.parseNormalValue(compList, value) }
+            });
+          } else {
+            valueMap = [{ idx: this.getIdx(), ...this.parseNormalValue(compList, '') }];
+          }
+        } else {
+          valueMap = this.parseNormalValue(compList, unitInfo);
+        }
       }
+      this.setState({ valueMap });
+      this.onChange(this.getValue(valueMap));
     };
 
     if (promises.length) {
       Promise.all(promises.map(({ promise }) => promise)).then((res) => {
-        this.collection = { ...collection, ..._.transform(res, (result, { data: { content } }, key) => { result[promises[key].dictId] = (content || []); }, {}) };
+        this.collection = { 
+          ...collection,
+          ..._.transform(res, (result, { data: { content } }, key) => { result[promises[key].dictId] = (content || []); }, {})
+        };
         parse();
       });
     } else {
@@ -179,9 +244,8 @@ export default class CustomComponent extends Component {
     } else {
       compList.map(({ id, defaultValue }) => valueMap[id] = defaultValue);
     }
-
-    this.setState({ valueMap });
-    this.onChange(this.getValue(valueMap));
+    
+    return valueMap;
   }
 
   parseNormalValue (compList, unitInfo) {
@@ -194,8 +258,7 @@ export default class CustomComponent extends Component {
       compList.map(({ id, defaultValue }) => valueMap[id] = defaultValue);
     }
 
-    this.onChange(this.getValue(valueMap));
-    this.setState({ valueMap });
+    return valueMap;
   }
 
   getValue (valueMap) {
@@ -205,21 +268,34 @@ export default class CustomComponent extends Component {
     if (this.isEmpty(compList, valueMap)) {
       return { attrValue: null, unitInfo: null };
     } else {
-      const unitInfos = compList.map(item => valueMap[item.id] == null ? '' : valueMap[item.id]);
-      const attrValues = compList.map(item => {
-        const { attrType, dictId } = item;
-        if (dictId && attrType === ATTR_TYPE_SELECT && valueMap[item.id]) {
-          if (this.collection && this.collection[dictId]) {
-            const match = (this.collection[dictId] || []).find(({ code }) => code === valueMap[item.id]);
-            return match ? match.name : (valueMap[item.id] == null ? '' : valueMap[item.id]);
+      const formatValue = (value) => {
+        const unitInfos = compList.map(item => value[item.id] == null ? '' : value[item.id]);
+        const attrValues = compList.map(item => {
+          const { attrType, dictId } = item;
+          if (dictId && attrType === ATTR_TYPE_SELECT && value[item.id]) {
+            if (this.collection && this.collection[dictId]) {
+              const match = (this.collection[dictId] || []).find(({ code }) => code === value[item.id]);
+              return match ? match.name : (value[item.id] == null ? '' : value[item.id]);
+            } else {
+              return value[item.id] == null ? '' : value[item.id];
+            }
           } else {
-            return valueMap[item.id] == null ? '' : valueMap[item.id];
+            return value[item.id] == null ? '' : value[item.id];
           }
-        } else {
-          return valueMap[item.id] == null ? '' : valueMap[item.id];
-        }
-      });
-      return { attrValue: attrValues.join(''), unitInfo: unitInfos.join(REPLACEMENT_CHARACTER) };
+        });
+        return { unitInfos, attrValues };
+      };
+      if (this.isMultiple()) {
+        const values = (valueMap || []).map(value => { return formatValue(value); });
+        const attrValue = values.map(({ attrValues }) => attrValues.join('')).join(';');
+        const unitInfo = values.map(({ unitInfos }) => unitInfos.join(REPLACEMENT_CHARACTER)).join(';');
+        return { unitInfo, attrValue };
+      } else {
+        const values = formatValue(valueMap);
+        const attrValue = values.attrValues.join('');
+        const unitInfo = values.unitInfos.join(REPLACEMENT_CHARACTER);
+        return { unitInfo, attrValue };
+      }
     }
   }
 
@@ -227,18 +303,35 @@ export default class CustomComponent extends Component {
     return JSON.parse(this.props.moduleConfigInfo || null) || [];
   }
 
-  handleChange = (id, value) => {
-    const { valueMap } = this.state;
-    this.setState({ 
-      valueMap: { ...valueMap, [id]: value }
-    }, () => {
-      this.onChange();
-    });
+  handleChange = (id, value, idx) => {
+    let { valueMap } = this.state;
+
+    if (this.isMultiple()) {
+      valueMap = valueMap.map(item => item.idx === idx ? { ...item, [id]:value } : { ...item });
+    } else {
+      valueMap = { ...this.state.valueMap, [id]: value };
+    }
+
+    this.setState({ valueMap }, () => this.onChange());
+  }
+
+  handleAdd = (e) => {
+    e.preventDefault();
+    this.setState({ valueMap: [...this.state.valueMap, { idx: this.getIdx(), ...this.parseNormalValue(this.getCompList(), '') }] });
+  }
+
+  handleRemove = (e, idx) => {
+    e.preventDefault();
+    this.setState({ valueMap: this.state.valueMap.filter(value => value.idx !== idx) }, () => this.onChange());
   }
 
   generateComponent () {
     const { mode } = this.props;
-    return mode === 'edit' ? this.generateCompactInput() : this.generateViewArea();
+    return mode === 'edit' ? this.genetateEditArea() : this.generateViewArea();
+  }
+
+  genetateEditArea () {
+    return this.isMultiple() ? this.generateMutipleInput() : this.generateSingleInput();
   }
 
   generateViewArea () {
@@ -246,14 +339,16 @@ export default class CustomComponent extends Component {
     let element = null;
     const { valueMap } = this.state;
     const compList = this.getCompList();
-    const { viewRender } = this.props;
-    const value = ((this.props.field.value || {}).unitInfo || '').replace(new RegExp(REPLACEMENT_CHARACTER, 'g'), '');
+    const { viewRender, isOnlyShowText } = this.props;
+    const value = ((this.props.field.value || {}).attrValue || '').replace(new RegExp(REPLACEMENT_CHARACTER, 'g'), '');
+
 
     if (viewRender) {
       element = viewRender(value, valueMap, compList);
     } else {
       title = value;
-      element = this.generateCompactInput(true);
+      element = value;
+      if (isOnlyShowText) { return title; }
     }
 
     return (
@@ -261,17 +356,19 @@ export default class CustomComponent extends Component {
     );
   }
 
-  generateEditModeInput (valueMap, compList) {
+  generateEditModeInput (valueMap = this.state.valueMap, idx, toolbar) {
+    const compList = this.getCompList();
     const { disabled, size = 'default' } = this.props;
     const props = { size, compact: true, className: 'form-filed-custom-component-wrapper' };
 
-    return (
+    return valueMap && (
       <InputGroup {...props}>
         {
           compList.map(item => {
-            let { id, dictId, attrType, defaultValue, availableList = [], verificationRule } = item;
+            let { id, width, dictId, attrType, defaultValue, availableList = [], verificationRule } = item;
             let props = { size, disabled, key: id };
             let element = null;
+            const styleWidth = getWidth(width, attrType);
 
             if (attrType === ATTR_TYPE_LABEL) {
               props = { 
@@ -279,7 +376,7 @@ export default class CustomComponent extends Component {
                 disabled: true,
                 title: defaultValue,
                 className: 'ellipsis',
-                style: { padding: '0', minWidth: '20px', maxWidth: '50px' }
+                style: { padding: '0', width: styleWidth }
               };
               element = (<Button {...{...props}}>{defaultValue}</Button>);
             } else if (({ [ATTR_TYPE_INT]: 1, [ATTR_TYPE_TEXT]: 1 })[attrType]) {
@@ -287,19 +384,17 @@ export default class CustomComponent extends Component {
                 ...props, 
                 defaultValue,
                 value: valueMap[id],
-                style: { minWidth: 40, maxWidth: 50 }
+                style: { width: styleWidth }
               };
               verificationRule = verificationRule ? JSON.parse(verificationRule) : null;
               if (verificationRule) {
-                _.forEach(verificationRule, (value, key) => {
-                  props[key] = value;
-                });
+                _.forEach(verificationRule, (value, key) => { props[key] = value; });
               }
               if (attrType === ATTR_TYPE_INT) {
-                props.onChange = (value) => this.handleChange(id, (`${(value == null || !`${value}`.trim()) ? '' : value}`).trim());
+                props.onChange = (value) => this.handleChange(id, (`${(value == null || !`${value}`.trim()) ? '' : value}`).trim(), idx);
                 element = (<InputNumber {...props}/>);
               } else {
-                props.onChange = (e) => this.handleChange(id, (e.target.value || '').trim());
+                props.onChange = (e) => this.handleChange(id, (e.target.value || '').trim(), idx);
                 element = (<Input {...props}/>);
               }
             } else if (attrType === ATTR_TYPE_SELECT) {
@@ -307,10 +402,10 @@ export default class CustomComponent extends Component {
                 ...props,
                 mode: 'edit',
                 isMultiple: false,
+                style: { width: styleWidth },
                 dropdownMatchSelectWidth: false,
-                style: { minWidth: 40, maxWidth: 110 },
                 className: 'form-filed-custom-component-unit',
-                onChange: (value) => this.handleChange(id, value),
+                onChange: (value) => this.handleChange(id, value, idx),
                 value: valueMap[id] ? valueMap[id] : valueMap[id] == null ? defaultValue : undefined
               };
 
@@ -330,54 +425,40 @@ export default class CustomComponent extends Component {
             return element;
           })
         }
+        {toolbar}
       </InputGroup>
     );
   }
 
-  generateViewModeInput (valueMap, compList) {
-    return !this.isEmpty(compList, valueMap) && (
-      <div>
+  generateMutipleInput () {
+    const { valueMap } = this.state;
+    const length = (valueMap || []).length;
+    const { disabled, size = 'default' } = this.props;
+    return valueMap && (
+      <ul className="form-filed-custom-component-list-wrapper">
         {
-          compList.map(item => {
-            let { id, dictId, attrType, defaultValue, availableList = [] } = item;
-            const commonProps = { key: id, style: { display: 'inline-block' } };
-            let element = null;
-
-            if (attrType === ATTR_TYPE_LABEL) {
-              element = (<div {...commonProps}>{defaultValue}</div>);
-            } else if (({ [ATTR_TYPE_INT]: 1, [ATTR_TYPE_TEXT]: 1 })[attrType]) {
-              element = (<div {...commonProps}>{valueMap[id]}</div>);
-            } else if (attrType === ATTR_TYPE_SELECT) {
-              const props = { 
-                mode: 'view',
-                isMultiple: false,
-                dropdownMatchSelectWidth: false,
-                value: valueMap[id] ? valueMap[id] : valueMap[id] == null ? defaultValue : undefined
-              };
-
-              if (dictId) {
-                props.field = { dictId };
-                props.availableList = availableList;
-                props.getData = this.props.getData;
-              } else {
-                props.dataSource = (availableList || []).map(code => ({ code, name: code }));
-              }
-
-              element = (<div {...commonProps}><Select {...props} /></div>);
-            }
+          valueMap.map(value => {
+            const idx = value.idx;
+            const style = { padding: '0 2px', width: 25 };
+            const propValues = _.omit(value, ['idx']);
+            const toolbar = disabled ? null : (
+              <React.Fragment>
+                {length === 1 ? (<Button icon="minus-circle" size={size} disabled style={style} />) : (<Button type="danger" icon="minus-circle" size={size} onClick={e => this.handleRemove(e, idx)} style={style} />)}
+                <Button size={size} icon="plus-circle" type="primary" onClick={this.handleAdd} style={style} />
+              </React.Fragment>
+            );
             
-            return element;
+            return (
+              <li key={idx}>{this.generateEditModeInput(propValues, idx, toolbar, true)}</li>
+            );
           })
         }
-      </div>
+      </ul>
     );
   }
 
-  generateCompactInput (isViewMode = false) {
-    const compList = this.getCompList();
-    const { valueMap } = this.state;
-
-    return isViewMode ? this.generateViewModeInput(valueMap, compList) : this.generateEditModeInput(valueMap, compList);
+  generateSingleInput () {
+    return this.generateEditModeInput();
   }
 
   render () {
@@ -390,6 +471,7 @@ export default class CustomComponent extends Component {
     style: PropTypes.object,
     getData: PropTypes.func,
     disabled: PropTypes.bool,
+    isMultiple: PropTypes.bool,
     moduleConfigInfo: PropTypes.string
   }
 }

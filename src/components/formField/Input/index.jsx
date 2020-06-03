@@ -35,13 +35,19 @@ class FormFieldInput extends Component {
     generateViewArea (value) {
       let title;
       let element = null;
-      const { viewRender } = this.props;
+      const { viewRender, isOnlyShowText } = this.props;
+
       if (viewRender) {
         element = viewRender(value);
       } else {
         element = value;
         title = element;
+        
+        if (isOnlyShowText) {
+          return title;
+        }
       }
+
       return (
         <div className="form-field-render-view" title={title}><div className="form-field-render-view-value">{ element }</div></div>
       );

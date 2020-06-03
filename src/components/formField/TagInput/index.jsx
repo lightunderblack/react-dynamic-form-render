@@ -31,7 +31,7 @@ class TagInput extends Component {
   generateViewArea (value) {
     let title;
     let element = null;
-    const { viewRender } = this.props;
+    const { viewRender, isOnlyShowText } = this.props;
     const match = value;
 
     if (viewRender) {
@@ -39,6 +39,10 @@ class TagInput extends Component {
     } else {
       element = match.join(';');
       title = element;
+
+      if (isOnlyShowText) {
+        return title;
+      }
     }
 
     return (

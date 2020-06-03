@@ -19,9 +19,11 @@ export const ATTR_TYPE_SINGLE_TAG_INPUT = "18";//单标签输入框
 export const ATTR_TYPE_TREE_MULTI_SELECT = "19"; // 树形多选
 export const ATTR_TYPE_LABEL = "999";//文本标签
 export const ATTR_TYPE_CUSTOM_COMP = "9999";//定制组件
+export const ATTR_TYPE_CUSTOM_COMP_MULTI = "10000";//定制组件多值
 export const ATTR_TYPE_COMPONENT = "9999999";//预留自定义组件
 
 export const REPLACEMENT_CHARACTER = "\uFFFD";//特殊分隔符
+export const MAX_CACHE_CHARACTER_LENGTH = 8000000;//缓存字符最大长度
 
 export const CUSTOM_COMP_ITEM_TYPE_PREFIX = "1";//定制组件-前缀
 export const CUSTOM_COMP_ITEM_TYPE_INPUT = "2";//定制组件-输入
@@ -138,6 +140,9 @@ export const ATTR_TYPE_LIST = [{
   text: '单标签输入',
   value: ATTR_TYPE_SINGLE_TAG_INPUT,
 }, {
-  text: '自定义组件',
+  text: '定制组件',
   value: ATTR_TYPE_CUSTOM_COMP
+}, {
+  text: '定制组件多值',
+  value: ATTR_TYPE_CUSTOM_COMP_MULTI
 }]

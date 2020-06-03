@@ -84,6 +84,11 @@ export default function withUnitComponent(WrappedComponent) {
         <div className="form-field-render-view"><div className="form-field-render-view-value">{unit}</div></div>
       );
     }
+    
+    generateUnitTextViewArea () {
+      const { id, unit } = this.state;
+      return (id != null && !!`${id}`.trim()) && (<span>{unit}</span>);
+    }
 
     generateUnitSelect() {
       const props = {
@@ -110,22 +115,35 @@ export default function withUnitComponent(WrappedComponent) {
         value: this.state.id,
         onChange: this.handleValueChange
       };
+
       if (props.key != null) {
         props.key = `withUnitComponent_${props.key}`;
       }
-      
-      return (
-        mode === 'edit' ?
+
+      if (mode === 'edit') {
+        return (
           <InputGroup compact={true} style={{ display: 'flex', flexWarp: 'nowarp' }}>
             <WrappedComponent {...props} />
             {this.generateUnitSelect()}
           </InputGroup>
-          :
-          <div style={{ display: 'flex', flexWarp: 'nowarp' }}>
-            <WrappedComponent {...props} />
-            {this.generateViewArea()}
-          </div>
-      )
+        );
+      } else {
+        if (this.props.isOnlyShowText) {
+          return (
+            <span>
+              <WrappedComponent {...props} />
+              {this.generateUnitTextViewArea()}
+            </span>
+          );
+        } else {
+          return (
+            <div style={{ display: 'flex', flexWarp: 'nowarp' }}>
+              <WrappedComponent {...props} />
+              {this.generateViewArea()}
+            </div>
+          );
+        }
+      }
     }
 
     generateWithoutUnitComponent () {

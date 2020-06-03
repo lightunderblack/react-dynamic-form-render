@@ -4,6 +4,8 @@ import PasteModal from '../PasteModal';
 import { Icon, Tooltip, TreeSelect } from 'antd';
 
 import _ from 'lodash';
+import Tools from '../../../util/tool';
+
 import './style.less';
 
 const { TreeNode } = TreeSelect;
@@ -79,9 +81,18 @@ export default class FormFieldTreeSelect extends Component {
   }
 
   getValue () {
-    const { value, isMultiple, isOnlyChild, isForceMutipleMode } = this.props;
+    const { value, isMultiple, isOnlyChild, isForceMutipleMode, treeCheckStrictly } = this.props;
     if (isMultiple) {
-      return value;
+      if (treeCheckStrictly) {
+        if (value == null) {
+          return value;
+        } else {
+          const rows = this.getFlattenRows();
+          return rows.filter(item => !!~_.indexOf(value, item[this.getKey(item)])).map(item => ({ label: item[this.getName()], value: item[this.getKey(item)] }));
+        }
+      } else {
+        return value;
+      }
     } else {
       return this.isForceMutipleMode({ isOnlyChild, isForceMutipleMode }) ? (value ? [value] : undefined) : value;
     }
@@ -106,7 +117,7 @@ export default class FormFieldTreeSelect extends Component {
   }
 
   getFullPathName (item) {
-    return [...item._path_, item[this.getName()]].filter(v => v).join('/');
+    return [...item._path_, item[this.getName()]].filter(v => v).join(this.props.fullPathSeparator);
   }
 
   getTreeDefaultExpandAll () {
@@ -133,7 +144,8 @@ export default class FormFieldTreeSelect extends Component {
 
     //若根节点只有一个子节点则移除该节点，将该节点子节点上移
     if (isAutoRemoveOnlyOneChildNode && data && data.length === 1) {
-      data = data[0].children;
+      const children = data[0].children;
+      if ((children || []).length) { data = children; }
     }
 
     const root = { children: this.sortedByIsIsEnabled(data || []) };
@@ -172,9 +184,7 @@ export default class FormFieldTreeSelect extends Component {
         const nodes = this.pretreatment([...(content || [])]);
 
         this.setState({ nodes });
-
-        sessionStorage.setItem(key, JSON.stringify([...(content || [])]));
-        sessionStorage.setItem(`${key}_flatten`, JSON.stringify(this.flattenRows(nodes)));
+        Tools.sessionStorage.add(key, [...(content || [])]);
       }, () => {
         this.setState({ nodes: [] });
       }).catch((error) => {
@@ -185,15 +195,10 @@ export default class FormFieldTreeSelect extends Component {
     if (noCache) {
       fetch();
     } else {
-      const data = sessionStorage.getItem(key);
-      if (data && JSON.parse(data).length) {
-        const nodes = this.pretreatment(JSON.parse(data));
+      const data = Tools.sessionStorage.get(key);
+      if (data && data.length) {
+        const nodes = this.pretreatment(data);
         this.setState({ nodes });
-
-        const flattenNodes = sessionStorage.getItem(`${key}_flatten`);
-        if (!flattenNodes || !JSON.parse(flattenNodes).length) {
-          sessionStorage.setItem(`${key}_flatten`, JSON.stringify(this.flattenRows(nodes)));
-        }
       } else {
         fetch();
       }
@@ -226,16 +231,8 @@ export default class FormFieldTreeSelect extends Component {
       if (this.rows && this.rows.length) {
         return this.rows;
       } else {
-        const key = this.getKeyName(this.props.params);
-        const cacheData = sessionStorage.getItem(`${key}_flatten`);
-  
-        if (cacheData && JSON.parse(cacheData).length) {
-          this.rows = JSON.parse(cacheData);
-          return this.rows;
-        } else {
-          this.rows = this.flattenRows();
-          return this.rows;
-        }
+        this.rows = this.flattenRows();
+        return this.rows;
       }
     }
   }
@@ -332,8 +329,16 @@ export default class FormFieldTreeSelect extends Component {
   }
 
   handleChange = (value, label, extra) => {
-    this.props.onChange && this.props.onChange(value);
-    this.props.onSelfChange && this.props.onSelfChange(value, { label, extra });
+    const { isMultiple, treeCheckStrictly } = this.props;
+    
+    if (isMultiple && treeCheckStrictly) {
+      const val = value == null ? value : value.map(({ value }) => value);
+      this.props.onChange && this.props.onChange(val);
+      this.props.onSelfChange && this.props.onSelfChange(val, { label, extra });
+    } else {
+      this.props.onChange && this.props.onChange(value);
+      this.props.onSelfChange && this.props.onSelfChange(value, { label, extra });
+    }
   }
 
   handleSingleChange = (value, label, extra) => {
@@ -360,8 +365,8 @@ export default class FormFieldTreeSelect extends Component {
   }
 
   handleSelect = (value, node) => {
-    const { isOnlyChild } = this.props;
-    const { props: { isLeaf, children } } = node;
+    const { isOnlyChild, isRootNodeSelectable } = this.props;
+    const { props: { isLeaf, children, parentId } } = node;
     const onChange = () => {
       this.props.onChange && this.props.onChange(value);
       this.props.onSelfChange && this.props.onSelfChange(value, node);
@@ -373,7 +378,9 @@ export default class FormFieldTreeSelect extends Component {
         this.handleHideDropdown();//隐藏下拉框
       }
     } else {
-      onChange();
+      if (isRootNodeSelectable || parentId !== '-1') {
+        onChange();
+      }
     }
   }
 
@@ -430,7 +437,7 @@ export default class FormFieldTreeSelect extends Component {
         name: item[this.getName()],
         key: item[this.getKey(item)],
         value: item[this.getKey(item)],
-        path: [_.last(item._path_), item[this.getName()]].filter(v => v).join('/')
+        path: [_.last(item._path_), item[this.getName()]].filter(v => v).join(this.props.fullPathSeparator)
       };
 
       if (children && children.length) {
@@ -450,7 +457,7 @@ export default class FormFieldTreeSelect extends Component {
   generateViewArea (value) {
     let title;
     let element = null;
-    const { viewRender, isShowFullPath } = this.props;
+    const { viewRender, isShowFullPath, isOnlyShowText, maxTagCount } = this.props;
     const match = this.getFlattenRows().filter(item => !!~_.indexOf(value, item[this.getKey(item)]));
 
     if (viewRender) {
@@ -461,6 +468,15 @@ export default class FormFieldTreeSelect extends Component {
         title = match.map(item => this.getFullPathName(item)).join(';');
       } else {
         title = match.map(item => item[this.getName()]).join(';');
+      }
+      
+      if (isOnlyShowText) {
+        if (maxTagCount == null) {
+          return title;
+        } else {
+          const titles = title.split(/;/);
+          return titles.length <= maxTagCount ? titles.join(';') : `${titles.slice(0, maxTagCount).join(';')}...`;
+        }
       }
 
       element = match.map((item, index) => {
@@ -502,6 +518,7 @@ export default class FormFieldTreeSelect extends Component {
     let {
       mode,
       value,
+      onBlur,
       style = {},
       isMultiple,
       maxTagCount,
@@ -509,25 +526,29 @@ export default class FormFieldTreeSelect extends Component {
       isOnlyChild,
       dropdownStyle,
       isEnabledPaste,
+      treeCheckStrictly,
       maxTagPlaceholder,
       isForceMutipleMode,
       showCheckedStrategy,
+      autoClearSearchValue,
       getPopupContainer = () => document.body
     } = this.props;
 
     let props = {
       mode,
+      onBlur,
       placeholder,
       showSearch: true,
       allowClear: false,
       getPopupContainer,
+      treeCheckStrictly,
       showCheckedStrategy,
+      autoClearSearchValue,
       value: this.getValue(),
       ref: el => this.el = el,
       treeCheckable: isMultiple,
       treeNodeLabelProp: 'name',
       treeNodeFilterProp: 'path',
-      autoClearSearchValue: true,
       disabled: this.props.disabled,
       className: this.getClassName(),
       style: { width: '100%', ...style },
@@ -583,6 +604,7 @@ export default class FormFieldTreeSelect extends Component {
 
   static propTypes = {
     value: PropTypes.any,
+    onBlur: PropTypes.func,
     mode: PropTypes.string, //编辑/预览模式
     noCache: PropTypes.bool, //是否不缓存
     onLoaded: PropTypes.func, //数据加载完成后回调,可对数据进行加工
@@ -592,16 +614,21 @@ export default class FormFieldTreeSelect extends Component {
     textName: PropTypes.string,
     isMultiple: PropTypes.bool, //是否多选
     viewRender: PropTypes.func, //自定义渲染
+    isOnlyShowText: PropTypes.bool, //是否只显示文本
     isEnabledPaste: PropTypes.bool, //是否开启粘贴功能
+    treeCheckStrictly: PropTypes.bool, //checkable 状态下节点选择完全受控（父子节点选中状态不再关联），会使得 labelInValue 强制为 true
     isOnlyChild: PropTypes.bool, //是否只可选中叶子节点
     onSelfChange: PropTypes.func, //选中节点事件回调
     isShowFullPath: PropTypes.bool, //是否显示全路径
+    fullPathSeparator: PropTypes.string, //全路径分隔符
     treeDefaultExpandAll: PropTypes.bool, //是否默认展开全部
     getData: PropTypes.func.isRequired, //异步获取获取树节点数据
     isOnlyShowLeafNode: PropTypes.bool, //是否仅展示叶子节点
     dropdownMatchSelectWidth: PropTypes.any, //下拉列表是否与输入框同宽
     isDisabledItemSelectable: PropTypes.bool, //禁用节点是否可选
+    isRootNodeSelectable: PropTypes.bool,//根节点是否可选
     isAutoFocus: PropTypes.bool, //是否默认获取焦点
+    autoClearSearchValue: PropTypes.bool, //多选模式下选择取消选择时自动清除关键字
     isAutoExpandTreeNode: PropTypes.bool, //是否开启智能展开树节点功能
     isAutoRemoveOnlyOneChildNode:  PropTypes.bool, //是否开启智能移除只有一个子节点节点
     isForceMutipleMode: PropTypes.bool, //是否强制使用多选模式,为了实现单选搜索和多选搜索效果一致
@@ -613,12 +640,17 @@ export default class FormFieldTreeSelect extends Component {
     disabled: false,
     isAutoFocus: false,
     isOnlyChild: false,
+    isOnlyShowText: false,
     isShowFullPath: true,
     viewRender: undefined,
     isEnabledPaste: false,
+    fullPathSeparator: '|',
+    treeCheckStrictly: false,
     isOnlyShowLeafNode: false,
     isForceMutipleMode: false,
+    autoClearSearchValue: true,
     isAutoExpandTreeNode: false,
+    isRootNodeSelectable: true,
     isDisabledItemSelectable: false,
     isAutoRemoveOnlyOneChildNode: false
   }

@@ -22,7 +22,7 @@ class FormFieldSwitch extends Component {
   generateViewArea (value) {
     let title;
     let element = null;
-    const { viewRender } = this.props;
+    const { viewRender, isOnlyShowText } = this.props;
     const { checkedChildrenItem, unCheckedChildrenItem } = this.getCheckedData();
     const match = value === checkedChildrenItem.id ? checkedChildrenItem : unCheckedChildrenItem;
 
@@ -31,6 +31,9 @@ class FormFieldSwitch extends Component {
     } else {
       element = match.name;
       title = element;
+      if (isOnlyShowText) {
+        return title;
+      }
     }
 
     return (

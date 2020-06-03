@@ -8,3 +8,4 @@ export { default as FormFieldCheckboxGroup } from './CheckboxGroup';
 export { default as FormFieldUserSearchBox } from './UserSearchBox';
 export { default as FormFieldInput } from './Input';
 export { default as FormFieldNumber } from './Number';
+export { default as FormFieldCustomComponent } from './CustomComponent';

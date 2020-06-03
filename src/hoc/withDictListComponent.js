@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 import { Icon, Tooltip } from 'antd';
+import RelyAttrbuteListCollapse from '../components/RelyAttrbuteListCollapse';
 import { REPLACEMENT_CHARACTER } from '../constant/attrType';
+
 import _ from 'lodash';
+import Tools from '../util/tool';
 
 export default function withDictListComponent(WrappedComponent, filedName) {
   return class WithDictListComponent extends Component {
@@ -22,10 +24,10 @@ export default function withDictListComponent(WrappedComponent, filedName) {
     componentWillReceiveProps (nextProps) {
       const { field: { dictId }, dataSource } = nextProps;
       if (_.isArray(dataSource)) {
-        this.loadData(null, dataSource);
+        this.loadData(null, dataSource, nextProps);
       } else {
         if (dictId !== this.props.field.dictId) {
-          this.loadData(dictId);
+          this.loadData(dictId, null, nextProps);
         }
       }
     }
@@ -42,17 +44,23 @@ export default function withDictListComponent(WrappedComponent, filedName) {
       return this.props.textName || 'name';
     }
 
-    getExtraParams() {
-      const { extraParams } = this.props;
-      return extraParams ? (_.isFunction(extraParams) ? extraParams() : extraParams) : {};
+    getExtraParams(props) {
+      const { extraParams } = props;
+      if (extraParams) {
+        if (_.isFunction(extraParams)) {
+          return extraParams();
+        } else {
+          return extraParams;
+        }
+      } else {
+        return {};
+      }
     }
 
     object2Array (array) {
-      let { availableList, disabledList } = this.props;
+      let { disabledList } = this.props;
 
       disabledList = disabledList || [];
-      availableList = availableList || [];
-      array = availableList.length ? array.filter(item => !!~_.indexOf(availableList, item[this.getKey()])) : array;
       array = array.map(item => {
         const isEnabled = item.isEnabled == null ? '1' : item.isEnabled;
         let isDisabled = isEnabled === '1' ? '0' : '1';
@@ -61,6 +69,11 @@ export default function withDictListComponent(WrappedComponent, filedName) {
       });
 
       return array;
+    }
+
+    filterAvaliable (options) {
+      const { availableList } = this.props;
+      return (availableList || []).length ? (options || []).filter(({ id }) => !!~_.indexOf(availableList, id)) : options;
     }
 
     //将可用选项排前，不可用选项排后
@@ -84,22 +97,22 @@ export default function withDictListComponent(WrappedComponent, filedName) {
       return onLoaded ? onLoaded(array, list) : array;
     }
   
-    loadData (dictId, dataSource) {
+    loadData (dictId, dataSource, props = this.props) {
       if (dictId) {
-        this.loadDict({ apiName: dictId });
+        this.loadDict({ apiName: dictId }, props);
       } else {
-        this.setState({ options: this.sortedByIsDisabled(this.object2Array(dataSource || this.props.dataSource || [])) });
+        this.setState({ options: this.sortedByIsDisabled(this.object2Array(dataSource || props.dataSource || [])) });
       }
     }
   
-    loadDict (params) {
+    loadDict (params, props) {
       if (params.apiName) {
         const { noCache } = this.props;
         const key = `${filedName}_${params.apiName}`;
         const fetch = () => {
-          this.props.getData({ params: { ...params, ...this.getExtraParams() } }).then(({ data: { content } }) => {
+          this.props.getData({ params: { ...params, ...this.getExtraParams(props) } }).then(({ data: { content } }) => {
             this.setState({ options: this.sortedByIsDisabled(this.pretreatment(this.object2Array(content || []), content)) });
-            sessionStorage.setItem(key, JSON.stringify(content || []));
+            Tools.sessionStorage.add(key, (content || []));
           }, () => {
             this.setState({ options: [] });
           }).catch((error) => {
@@ -110,9 +123,9 @@ export default function withDictListComponent(WrappedComponent, filedName) {
         if (noCache) {
           fetch();
         } else {
-          const data = sessionStorage.getItem(key);
-          if (data && JSON.parse(data).length) {
-            const list = JSON.parse(data);
+          const data = Tools.sessionStorage.get(key);
+          if (data && data.length) {
+            const list = data;
             this.setState({ options: this.sortedByIsDisabled(this.pretreatment(this.object2Array(list), list)) });
           } else {
             fetch();
@@ -140,8 +153,8 @@ export default function withDictListComponent(WrappedComponent, filedName) {
     generateViewArea (value) {
       let title;
       let element = null;
-      const { viewRender } = this.props;
-      const match = this.state.options.filter(item => !!~_.indexOf(value, item.id));
+      const { viewRender, isOnlyShowText } = this.props;
+      const match = (value || []).map(id => this.state.options.find(item => item.id === id)).filter(v => v);
   
       if (viewRender) {
         element = viewRender(match, this.state.options);
@@ -167,6 +180,7 @@ export default function withDictListComponent(WrappedComponent, filedName) {
             );
           }
         });
+        if (isOnlyShowText) { return title; }
       }
   
       return (
@@ -175,12 +189,36 @@ export default function withDictListComponent(WrappedComponent, filedName) {
         </div>
       );
     }
+
+    generateRelyAttributeList (relyAttributeList) {
+      let { value, isMultiple } = this.props;
+
+      value = this.formatDefaultValue(value, isMultiple);
+      value = isMultiple ? [...(value || [])] : (value ? [value] : []);
+
+      const values = this.state.options.filter(item => {
+        return !!~_.indexOf(value, item.id);
+      }).map(({ id, name }) => {
+        return ({ name, code: id });
+      });
+      const props = {
+        values,
+        form: this.props.form,
+        columnCount: this.props.columnCount,
+        relyAttributeList: relyAttributeList,
+        formFiledRender: this.props.formFiledRender
+      };
+
+      return (
+        <RelyAttrbuteListCollapse {...props} />
+      );
+    }
     
     render() {
       const props = { 
         ...this.props,
-        options: this.state.options,
         formatDefaultValue: this.formatDefaultValue,
+        options: this.filterAvaliable(this.state.options),
         generateViewArea: this.generateViewArea.bind(this)
       };
       
@@ -188,7 +226,20 @@ export default function withDictListComponent(WrappedComponent, filedName) {
         props.key = `withDictListComponent_${props.key}`;
       }
 
-      return <WrappedComponent {...props} />;
+      const { mode, relyAttributeList } = this.props;
+      const element = (<WrappedComponent {...props} />);
+
+      if (mode === 'view' && !_.isEmpty(relyAttributeList)) {
+        //显示关联属性
+        return (
+          <React.Fragment>
+            {element}
+            {this.generateRelyAttributeList(relyAttributeList)}
+          </React.Fragment>
+        );
+      } else {
+        return element;
+      }
     }
 
     static defaultProps = {

@@ -13,10 +13,13 @@ import {
   ATTR_TYPE_CUSTOM_COMP,
   REPLACEMENT_CHARACTER,
   IS_MUTIPLE_VALUE_FIELDS,
+  ATTR_TYPE_CUSTOM_COMP_MULTI,
   ATTR_TYPE_TREE_MULTI_SELECT,
   ATTR_TYPE_MULTI_SEARCH,
 } from '../../constant/attrType';
+
 import _ from 'lodash';
+import Tools from '../../util/tool';
 
 import './DynamicFormRender.less';
 
@@ -73,8 +76,12 @@ export default class DynamicFormRender extends Component {
   }
 
   //是否大文本
-  isTextArea (attrType) {
-    return attrType === ATTR_TYPE_CLOB;
+  isItemShowAlone (attrType, relyAttributeList, isShowAlone) {
+    if (_.isEmpty(relyAttributeList)) {
+      return attrType === ATTR_TYPE_CLOB || isShowAlone === '1' || isShowAlone === true;
+    } else {
+      return this.props.mode === 'view';
+    }
   }
 
   //是否树形选择
@@ -100,7 +107,7 @@ export default class DynamicFormRender extends Component {
     while (itemList && itemList.length) {
       if (this.isTextAreaAlone()) {
         const item = itemList.shift();
-        if (this.isTextArea(item.attrType)) {
+        if (this.isItemShowAlone(item.attrType, item.relyAttributeList, this.getIsShowAlone(item))) {
           //如果遇到TextArea则将之前存的非Textarea的放入行数组
           if (items.length) {
             result.push([...items]);
@@ -127,6 +134,27 @@ export default class DynamicFormRender extends Component {
     return result;
   }
 
+  //是否单行显示
+  getIsShowAlone (field) {
+    const { isShowAlone, verificationRule } = field;
+    const value = isShowAlone != null ? isShowAlone : (verificationRule ? JSON.parse(verificationRule) : {}).isShowAlone;
+    return value == null  ? false : (_.isString(value) ? value === '1' : value);
+  }
+
+  //是否只能选择子节点
+  getIsOnlyChild (field) {
+    const { isOnlyChild, verificationRule } = field;
+    const value = isOnlyChild != null ? isOnlyChild : (verificationRule ? JSON.parse(verificationRule) : {}).isOnlyChild;
+    return value == null  ? false : (_.isString(value) ? value === '1' : value);
+  }
+
+  //checkable 状态下节点选择完全受控（父子节点选中状态不再关联），会使得 labelInValue 强制为 true
+  getTreeCheckStrictly (field) {
+    const { treeCheckStrictly, verificationRule } = field;
+    const value = treeCheckStrictly != null ? treeCheckStrictly : (verificationRule ? JSON.parse(verificationRule) : {}).treeCheckStrictly;
+    return value == null  ? false : (_.isString(value) ? value === '1' : value);
+  }
+
   getValue (value, defaultValue, attrType) {
     if (value == null && this.props.isSetDefaultValue) {
       if (defaultValue == null) {
@@ -151,10 +179,10 @@ export default class DynamicFormRender extends Component {
     return name ? (this.props.formItemLayout || verticalFormItemLayout) : verticalTailFormItemLayout;
   }
 
-  getHorizontalLayout (name, isTextArea, factor) {
+  getHorizontalLayout (name, isItemShowAlone, factor) {
     if (name) {
       const formItemLayout = this.props.formItemLayout || horizontalFormItemLayout;
-      if (this.isTextAreaAlone() && isTextArea) {
+      if (this.isTextAreaAlone() && isItemShowAlone) {
         const labelColSpan = formItemLayout.labelCol ? Math.ceil(formItemLayout.labelCol.span / factor) : formItemLayout.labelCol.span;
         const wrapperColSpan = 24 - labelColSpan || 0;
         return ({ labelCol: { span: labelColSpan }, wrapperCol: { span: wrapperColSpan } });
@@ -204,6 +232,7 @@ export default class DynamicFormRender extends Component {
       && isRequired === '1' 
         && this.props.isValidateRequired 
           && (isEditable == null || isEditable === '1');
+
     if (shouldValidateRequried) {
       rules.push({ message: '必填', required: isRequired === '1' });
       
@@ -217,17 +246,26 @@ export default class DynamicFormRender extends Component {
             callback();
           }
         });
-      } else if (({ [ATTR_TYPE_CUSTOM_COMP]: 1 })[attrType] && moduleConfigInfo) {
+      } else if (({ [ATTR_TYPE_CUSTOM_COMP]: 1, [ATTR_TYPE_CUSTOM_COMP_MULTI]: 1 })[attrType] && moduleConfigInfo) {
         //定制组件值校验，必须所有输入框都需有值
         moduleConfigInfo = JSON.parse(moduleConfigInfo);
         rules.push({
           validator: (rule, value, callback) => {
+            const { unitInfo = '' } = value || {};
             const requireField = this.getCustomCompRequireField(moduleConfigInfo);
-            const valueMap = this.parseCustomCompValue(value, moduleConfigInfo);
-            if (requireField.filter(id => !!valueMap[id]).length !== requireField.length) {
-              callback(`请输入值`);
+            if (attrType === ATTR_TYPE_CUSTOM_COMP) {
+              const valueMap = this.parseCustomCompValue(unitInfo, moduleConfigInfo);
+              if (requireField.filter(id => !_.isEmpty(valueMap[id])).length !== requireField.length) {
+                callback(`请输入值`);
+              }
+              callback();
+            } else {
+              const values = unitInfo.split(/;/g).map(value => this.parseCustomCompValue(value, moduleConfigInfo));
+              if (values.some(value => requireField.filter(id => !_.isEmpty(value[id])).length !== requireField.length)) {
+                callback(`每行输入框都需填写`);
+              }
+              callback();
             }
-            callback();
           }
         });
       }
@@ -245,12 +283,22 @@ export default class DynamicFormRender extends Component {
           this.getMinAndMaxRules(rules, verificationRule);
         }
       } else if (textType[attrType]) {
+        //正则表达式校验规则
         const regExp = verificationRule.regExp ? JSON.parse(verificationRule.regExp) : undefined;
-        //文本校验规则
         if (hasContainUnit) {
           this.getHasUnitRegExpRules(rules, regExp, unitConfig);
         } else {
           this.getRegExpRules(rules, regExp);
+        }
+
+        //字节校验规则
+        const { isValidChar, maxLength } = verificationRule;
+        if (maxLength && isValidChar === '1') {
+          if (hasContainUnit) {
+            this.getHasUnitValidCharRules(rules, maxLength, unitConfig);
+          } else {
+            this.getValidCharRules(rules, maxLength);
+          }
         }
       }
     }
@@ -263,8 +311,8 @@ export default class DynamicFormRender extends Component {
     const compList = moduleConfigInfo;
 
     compList.forEach(item => {
-      const { id, attrType } = item;
-      if (({ [ATTR_TYPE_INT]: 1, [ATTR_TYPE_TEXT]: 1, [ATTR_TYPE_SELECT]: 1 })[attrType]) {
+      const { id, attrType, isRequired = '1' } = item;
+      if (({ [ATTR_TYPE_INT]: 1, [ATTR_TYPE_TEXT]: 1, [ATTR_TYPE_SELECT]: 1 })[attrType] && isRequired === '1') {
         field.push(id);
       }
     });
@@ -359,6 +407,17 @@ export default class DynamicFormRender extends Component {
     }
   }
 
+  getValidCharRules (rules, maxLength) {
+    rules.push({
+      validator: (rule, value, callback) => {
+        if (value && Tools.byteSizeOfString(value) > Number(maxLength)) {
+          callback(`字节长度不能超过${maxLength},一个中文字符等于三个字节`);
+        }
+        callback();
+      }
+    });
+  }
+
   //带单位正则表达式校验规则
   getHasUnitRegExpRules (rules, regExp, { unitKeyName = 'unitInfo' }) {
     if (regExp && regExp.length) {
@@ -369,7 +428,7 @@ export default class DynamicFormRender extends Component {
             const [id] = unitValue.split(REPLACEMENT_CHARACTER);
             if (id) {
               regExp = this.getRegExp(regExp);
-              if (regExp && !regExp.test(value)) { callback(message) }
+              if (regExp && !regExp.test(id)) { callback(message) }
             }
           }
           callback();
@@ -378,9 +437,23 @@ export default class DynamicFormRender extends Component {
     }
   }
 
-  parseCustomCompValue(value, compList) {
+  getHasUnitValidCharRules (rules, maxLength, { unitKeyName = 'unitInfo' }) {
+    rules.push({
+      validator: (rule, value, callback) => {
+        const unitValue = value[unitKeyName];
+        if (unitValue) {
+          const [id] = unitValue.split(REPLACEMENT_CHARACTER);
+          if (id && id.replace(/[\u4e00-\u9fa5]/g,"aa").length > Number(maxLength)) {
+            callback(`字节长度不能超过${maxLength},一个中文=两个字节`);
+          }
+        }
+        callback();
+      }
+    });
+  }
+
+  parseCustomCompValue (unitInfo, compList) {
     const valueMap = {};
-    const { unitInfo = '' } = value || {};
     if (unitInfo) {
       const values = unitInfo.split(new RegExp(REPLACEMENT_CHARACTER, 'g'));
       compList.map((item, index) => { valueMap[item.id] = values[index] });
@@ -453,6 +526,7 @@ export default class DynamicFormRender extends Component {
         defaultValue,
         availableList,
         isShowFullPath,
+        relyAttributeList,
         isHelpNotesAlwaysNo
       } = item;
       const getLabel = () => {
@@ -464,11 +538,11 @@ export default class DynamicFormRender extends Component {
           </Tooltip>
         ) : label;
       };
-      const isTextArea = this.isTextArea(attrType);
+      const isItemShowAlone = this.isItemShowAlone(attrType, relyAttributeList, this.getIsShowAlone(item));
       let formProps = {
         label: getLabel(),
         hasFeedback: this.getHasFeedback(),
-        ...this.getHorizontalLayout(name, isTextArea, factor)
+        ...this.getHorizontalLayout(name, isItemShowAlone, factor)
       };
       if (mode === 'edit' && isHelpNotesAlwaysNo === '1' && helpNotes) {
         formProps.extra = helpNotes;
@@ -480,17 +554,20 @@ export default class DynamicFormRender extends Component {
         };
       } else {
         formProps.style = (formProps.style || {});
-        formProps.style.marginBottom =  isTextArea ? '4px' : '2px';
+        formProps.style.marginBottom =  isItemShowAlone ? '4px' : '2px';
       }
       
       const filedProps = {
         mode,
         size,
         availableList,
+        form: this.props.form,
         placeholder: inputWarn,
-        field: _.omit(item, EVENTS),
         disabled: this.isDisabled(item),
-        ..._.omit(item, ['value', 'defaultValue'])
+        columnCount: this.props.columnCount,
+        formFiledRender: this.props.formFiledRender,
+        field: { ..._.omit(item, EVENTS), attrType: (item.attrType === ATTR_TYPE_TEXT && this.getIsShowAlone(item)) ? ATTR_TYPE_CLOB : item.attrType },
+        ..._.omit(item, ['value', 'defaultValue']),
       };
 
       if (key != null) {
@@ -498,6 +575,8 @@ export default class DynamicFormRender extends Component {
       }
       if (this.isTreeSelect(attrType)) {
         filedProps.isShowFullPath = isShowFullPath == null ? true : isShowFullPath === '1';
+        filedProps.isOnlyChild = this.getIsOnlyChild(item);
+        filedProps.treeCheckStrictly = this.getTreeCheckStrictly(item);
       }
       if (this.isSearchBox(attrType)) {
         filedProps.isAllowViewModeCodeNotMatch = true;
@@ -525,8 +604,8 @@ export default class DynamicFormRender extends Component {
     const { columnCount } = this.props;
     const columnWidth = Math.floor(24 / (columnCount || 3));
     return this.generateRowItems(list, false, (24 / columnWidth)).map(({ field, component }, key) => {
-      const { attrType } = field;
-      const colProps = (this.isTextAreaAlone() && this.isTextArea(attrType)) ? {
+      const { attrType, relyAttributeList } = field;
+      const colProps = (this.isTextAreaAlone() && this.isItemShowAlone(attrType, relyAttributeList, this.getIsShowAlone(field))) ? {
         key,
         sm: 24,
         lg: 24,

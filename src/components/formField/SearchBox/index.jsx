@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Spin, Icon, Select, Tooltip } from 'antd';
+import RelyAttrbuteListCollapse from '../../RelyAttrbuteListCollapse';
 import debounce from 'lodash.debounce';
 import { REPLACEMENT_CHARACTER } from '../../../constant/attrType';
 import withUnitComponent from '../../../hoc/withUnitComponent';
@@ -270,7 +271,7 @@ class SearchBox extends Component {
   }
 
   handleSelect = (value) => {
-    const { onChange, isMultiple, onSelfChange, isHideDropDownListAfterSelect } = this.props;
+    const { onChange, isMultiple, onSelfChange, isClearOptionsAfterSelect, isHideDropDownListAfterSelect } = this.props;
 
     if (isMultiple) {
       value = (value && value.length) ? value : undefined;
@@ -289,7 +290,12 @@ class SearchBox extends Component {
       onSelfChange && onSelfChange(value, [...this.originData]);
       onChange && onChange(this.getValue(value));
     }
-    this.setState({ pending: false });
+
+    if (isClearOptionsAfterSelect) {
+      this.setState({ list: [], pending: false });
+    } else {
+      this.setState({ pending: false });
+    }
   }
 
   generateOptions() {
@@ -320,7 +326,7 @@ class SearchBox extends Component {
   generateViewArea() {
     let title;
     let element = null;
-    const { viewRender } = this.props;
+    const { viewRender, isOnlyShowText } = this.props;
     const { displayValue } = this.state;
 
     if (viewRender) {
@@ -346,6 +352,10 @@ class SearchBox extends Component {
           );
         }
       });
+
+      if (isOnlyShowText) {
+        return title;
+      }
     }
 
     return (
@@ -358,6 +368,7 @@ class SearchBox extends Component {
     const { 
       size,
       mode,
+      onBlur,
       disabled,
       isMultiple,
       style = {},
@@ -370,6 +381,7 @@ class SearchBox extends Component {
     } = this.props;
     const props = {
       size,
+      onBlur,
       disabled,
       allowClear: true,
       showSearch: true,
@@ -411,7 +423,37 @@ class SearchBox extends Component {
       props.onSearch = this.handleSearch;
     }
 
-    return mode === 'edit' ? (<Select {...props}>{this.generateOptions()}</Select>) : this.generateViewArea();
+    if (mode === 'edit') { 
+      return (<Select {...props}>{this.generateOptions()}</Select>);
+    } else {
+      const { relyAttributeList } = this.props;
+      const element = this.generateViewArea();
+      if (_.isEmpty(relyAttributeList)) {
+        return element;
+      } else {
+        return (
+          <React.Fragment>
+            {element}
+            {this.generateRelyAttributeList(relyAttributeList)}
+          </React.Fragment>
+        );
+      }
+    }
+  }
+
+  generateRelyAttributeList (relyAttributeList) {
+    const values = (this.state.value || []).map(({ key, label }) => ({ code: key, name: label }));
+    const props = {
+      values,
+      form: this.props.form,
+      columnCount: this.props.columnCount,
+      relyAttributeList: relyAttributeList,
+      formFiledRender: this.props.formFiledRender
+    };
+
+    return (
+      <RelyAttrbuteListCollapse {...props} />
+    );
   }
 
   render() {
@@ -423,6 +465,7 @@ class SearchBox extends Component {
     mode: PropTypes.string,
     size: PropTypes.string,
     disabled: PropTypes.bool,
+    onBlur: PropTypes.func,
     onLoaded: PropTypes.func,
     codeName: PropTypes.string,
     paramName: PropTypes.string,
@@ -433,6 +476,7 @@ class SearchBox extends Component {
     maxTagCount: PropTypes.number,
     getData: PropTypes.func.isRequired,
     dropdownMatchSelectWidth: PropTypes.any,
+    isClearOptionsAfterSelect: PropTypes.bool, //选中后清空options
     isHideDropDownListAfterSelect: PropTypes.bool, //选中值后是否隐藏下拉列表并清空值
     isAllowViewModeCodeNotMatch: PropTypes.bool //是否允许预览模式编码不匹配后台数据,直接显示值
   }
@@ -442,6 +486,7 @@ class SearchBox extends Component {
     mode: 'edit',
     disabled: false,
     isMultiple: false,
+    isClearOptionsAfterSelect: false,
     isAllowViewModeCodeNotMatch: false,
     isHideDropDownListAfterSelect: false
   }

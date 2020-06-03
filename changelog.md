@@ -1,3 +1,100 @@
+### 1.1.95
+- [feature] `TreeSelect`、`Select`、`SearchBox`支持`onBlur`事件
+
+### 1.1.93
+- [feature] `TreeSelect`支持设置`isOnlyChild`控制是否只能选择树叶子节点
+
+### 1.1.92
+- [feature] 定制组件类型，支持设置元素的`isRequired`控制是否必填校验
+
+### 1.1.91
+- [feature] 定制组件类型，支持设置元素的`isRequired`控制是否必填校验
+
+### 1.1.90
+- [feature] `DynamicSearchForm`支持`isShowAlone`配置信息，若单行文本并且配置isShowAlone，则展示为多行文本
+
+### 1.1.89
+- [bugfix] `DynamicSearchForm`支持`extractComponent`传入额外按钮对象
+
+### 1.1.88
+- [bugfix] `DynamicSearchForm`支持`extractComponent`传入额外按钮对象
+
+### 1.1.87
+- [bugfix] `DynamicSearchForm`支持`values`属性
+
+### 1.1.86
+- [feature] 定制组件支持元素的宽度设置，若宽度没有配置，则使用默认宽度
+
+### 1.1.85
+- [bugfix] `SearchBox`支持配置`isClearOptionsAfterSelect`选中节点是否清除列表，默认为`false`
+
+### 1.1.84
+- [bugfix] `TreeSelect`支持配置`isRootNodeSelectable`是否根节点可选择，默认为`true`
+
+### 1.1.83
+- [bugfix] 将缓存方法抽离统一管理，并且限定最大缓存JSON字符长度为8000000
+
+### 1.1.82
+- [bugfix] 树形去除对碾平数据的缓存，以节省缓存空间
+
+### 1.1.81
+- [bugfix] 修复字节长度校验，计算字符字节数有误问题
+
+### 1.1.80
+- [feature] `TreeSelect`值非常多时，支持显示省略号
+
+### 1.1.79
+- [feature] 文本类型组件，支持字节长度校验
+
+### 1.1.78
+- [bugfix] `TreeSelect`全路径显示时，支持`fullPathSeparator`设置连接符
+
+### 1.1.77
+- [bugfix] `CustomComponent`多行输入时，光标会丢失
+- [bugfix] `List`类型组件预览模式下，未按所选值顺序显示
+
+### 1.1.76
+- [bugfix] `CustomComponent`的`valueMap`报错
+
+### 1.1.75
+- [bugfix] `FormFieldTreeSelect`配置项`isAutoRemoveOnlyOneChildNode`当没有子节点时会显示不了节点
+
+### 1.1.74
+- [feature] `DynamicFormRender`表单配置支持`isShowAlone`设置是否单独行展示
+
+### 1.1.73
+- [bugfix] 修复定制组件报错问题
+
+### 1.1.72
+- [feature] `TreeSelect`放开`autoClearSearchValue`属性由外部传入
+
+### 1.1.71
+- [bugfix] 修复关联属性是列表类型时组件报错
+
+### 1.1.70
+- [feature] 关联属性展示默认全部展开
+
+### 1.1.69
+- [feature] 支持关联属性展示
+
+### 1.1.68
+- [bugfix] 修复列表类型参数`extraParams`在`props`变更后，获取的参数值还是旧值
+
+### 1.1.67
+- [feature] 新增`定制组件多值`类型
+
+### 1.1.66
+- [bugfix] 修复列表类型组件的`avaliable`值变更不起效
+
+### 1.1.65
+- [feature] 修改文档说明 
+
+### 1.1.64
+- [bugfix] 带单位表单支持`isOnlyShowText`，在预览模式下，只输出纯文本
+
+### 1.1.63
+- [bugfix] 支持`isOnlyShowText`，支持表单组件在预览模式下，只输出纯文本，对数据字典转义场景非常有用
+
 ### 1.1.62
 - [bugfix] `DynamicFormRender`大文本单独成行实现存在问题，会打乱用户传入的表单配置顺序
 
